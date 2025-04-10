@@ -34,9 +34,18 @@ const MusicCard = ({ track, onPlay }) => {
   };
 
   // Determine source badge text and color
-  const sourceBadge = track.source === 'premium' ? 
-    { text: 'Premium', color: 'bg-purple-600' } : 
-    { text: 'Community', color: 'bg-green-600' };
+  const sourceBadges = {
+    youtube: { text: 'YouTube', color: 'bg-red-600' },
+    premium: { text: 'Premium', color: 'bg-purple-600' },
+    deezer: { text: 'Deezer', color: 'bg-purple-600' },
+    community: { text: 'Community', color: 'bg-green-600' },
+    jamendo: { text: 'Jamendo', color: 'bg-green-600' }
+  };
+
+  const sourceBadge = sourceBadges[track.source] || { 
+    text: 'Unknown', 
+    color: 'bg-gray-600' 
+  };
 
   return (
     <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:bg-gray-700 transition-colors duration-300">

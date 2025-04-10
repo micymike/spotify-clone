@@ -50,6 +50,10 @@ const playerSlice = createSlice({
     addToQueue: (state, action) => {
       state.queue.push(normalizeTrack(action.payload));
     },
+    // New action to set entire queue
+    setQueue: (state, action) => {
+      state.queue = action.payload.map(normalizeTrack);
+    },
     nextTrack: (state) => {
       if (state.queue.length > 0) {
         state.currentTrack = state.queue[0];
@@ -83,5 +87,15 @@ const playerSlice = createSlice({
   },
 });
 
-export const { setCurrentTrack, togglePlay, setVolume, setProgress, addToQueue, nextTrack, previousTrack, playNext } = playerSlice.actions;
+export const { 
+  setCurrentTrack, 
+  togglePlay, 
+  setVolume, 
+  setProgress, 
+  addToQueue, 
+  nextTrack, 
+  previousTrack, 
+  playNext,
+  setQueue  // Added this export
+} = playerSlice.actions;
 export default playerSlice.reducer;

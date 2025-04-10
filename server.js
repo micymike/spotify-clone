@@ -7,6 +7,7 @@ import MongoStore from 'connect-mongo';
 import rateLimit from 'express-rate-limit';
 import User from './src/models/User.js';
 import { errorHandler, APIError } from './src/middleware/errorHandler.js';
+import play from 'play-dl';
 
 dotenv.config();
 
@@ -422,6 +423,81 @@ app.delete('/api/mimo/playlists/:playlistId/tracks/:trackId', async (req, res, n
     res.json(playlist);
   } catch (error) {
     next(error instanceof APIError ? error : new APIError('Failed to remove track from playlist', 500));
+  }
+});
+
+// YouTube search endpoint
+app.get('/api/mimo/youtube/search', searchLimiter, async (req, res, next) => {
+  try {
+    const { query } = req.query;
+    console.log('Searching YouTube for:', query);
+    
+    // Search YouTube
+    const results = await play.search(query, { 
+      limit: 10,
+      source: { youtube: 'video' }
+    });
+    
+    // Format tracks with robust error handling
+    const tracks = results.map(video => {
+      // Safely extract duration
+      const duration = video.duration && typeof video.duration === 'object' 
+        ? video.duration.seconds || 0 
+        : (typeof video.duration === 'number' ? video.duration : 0);
+
+      // Safely extract channel name
+      const artistName = video.channel?.name || 
+        (video.artist ? video.artist.name : 'Unknown Artist');
+
+      // Safely extract thumbnail
+      const thumbnailUrl = video.thumbnails && video.thumbnails.length > 0 
+        ? video.thumbnails[0].url 
+        : 'https://placehold.co/400x400/1e293b/ffffff?text=YouTube';
+
+      return {
+        id: `youtube_${video.id}`,
+        name: video.title || 'Untitled',
+        artist_name: artistName,
+        duration: duration,
+        image: thumbnailUrl,
+        audio: video.url,
+        shareurl: video.url,
+        source: 'youtube'
+      };
+    }).filter(track => track.name !== 'Untitled'); // Filter out any completely invalid tracks
+
+    console.log(`Found ${tracks.length} YouTube tracks`);
+    res.json({ tracks });
+  } catch (error) {
+    console.error('YouTube search error:', error);
+    next(new APIError('Failed to search YouTube tracks', 500, { 
+      originalError: error.message 
+    }));
+  }
+});
+
+// YouTube audio stream endpoint
+app.get('/api/mimo/youtube/stream', async (req, res) => {
+  try {
+    const { url } = req.query;
+    
+    // Validate URL
+    if (!url) {
+      return res.status(400).json({ error: 'YouTube URL is required' });
+    }
+
+    // Get stream
+    const stream = await play.stream(url);
+    
+    // Set headers
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    // Pipe stream to response
+    stream.pipe(res);
+  } catch (error) {
+    console.error('YouTube stream error:', error);
+    res.status(500).json({ error: 'Failed to stream audio' });
   }
 });
 

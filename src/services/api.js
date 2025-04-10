@@ -231,4 +231,25 @@ export const removeTrackFromPlaylist = async (playlistId, trackId) => {
   }
 };
 
+// YouTube music search
+export const searchYouTubeMusic = async (query) => {
+  return withLoading(async () => {
+    try {
+      const response = await axiosInstance.get('/mimo/youtube/search', { 
+        params: { query } 
+      });
+      
+      return {
+        youtube: response.data.tracks || []
+      };
+    } catch (error) {
+      console.error('YouTube search error:', error);
+      return handleError(error, {
+        message: 'Failed to search YouTube tracks',
+        defaultValue: { youtube: [] }
+      });
+    }
+  }, 'Searching YouTube...');
+};
+
 export { axiosInstance as axios, handleError, withLoading };
